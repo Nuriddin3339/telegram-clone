@@ -2,7 +2,7 @@ const io = require("socket.io")(5000, {
   cors: { origin: "*", methods: ["GET", "POST"] },
 });
 
-let users = [];
+let users = []; // {user, socketId}
 
 const addOnlineUser = (user, socketId) => {
   const checkUser = users.find((u) => u.user._id === user._id);
@@ -37,6 +37,44 @@ io.on("connection", (socket) => {
       socket
         .to(receiverSocketId)
         .emit("getNewMessage", { newMessage, sender, receiver });
+    }
+  });
+
+  socket.on("readMessages", ({ receiver, messages }) => {
+    const receiverSocketId = getSocketId(receiver._id);
+    if (receiverSocketId) {
+      socket.to(receiverSocketId).emit("getReadMessages", messages);
+    }
+  });
+
+  socket.on("updateMessage", ({ updatedMessage, receiver, sender }) => {
+    const receiverSocketId = getSocketId(receiver._id);
+    if (receiverSocketId) {
+      socket
+        .to(receiverSocketId)
+        .emit("getUpdatedMessage", { updatedMessage, sender, receiver });
+    }
+  });
+
+  socket.on(
+    "deleteMessage",
+    ({ deletedMessage, receiver, sender, filteredMessage }) => {
+      const receiverSocketId = getSocketId(receiver._id);
+      if (receiverSocketId) {
+        socket.to(receiverSocketId).emit("getDeletedMessage", {
+          deletedMessage,
+          sender,
+          receiver,
+          filteredMessage,
+        });
+      }
+    }
+  );
+
+  socket.on("typing", ({ receiver, sender, message }) => {
+    const receiverSocketId = getSocketId(receiver._id);
+    if (receiverSocketId) {
+      socket.to(receiverSocketId).emit("getTyping", { sender, message });
     }
   });
 
